@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebRTC Broadcaster</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #localVideo {
+      width: 100%;
+      max-width: 640px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #3367d6;
+    }
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .status {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .online {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .offline {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+  </style>
+</head>
+<body>
+  <h1>WebRTC Broadcaster</h1>
+  <div class="container">
+    <video id="localVideo" autoplay muted playsinline></video>
+    <div class="controls">
+      <button id="startButton">Start Camera</button>
+      <button id="broadcastButton" disabled>Start Broadcasting</button>
+      <button id="stopButton" disabled>Stop Broadcasting</button>
+    </div>
+    <div id="status" class="status offline">Status: Not Broadcasting</div>
+  </div>
+  
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+  const socket = io();
+  
+  const localVideo = document.getElementById('localVideo');
+  const startButton = document.getElementById('startButton');
+  const broadcastButton = document.getElementById('broadcastButton');
+  const stopButton = document.getElementById('stopButton');
+  const statusElement = document.getElementById('status');
+  
+  let localStream;
+  let peerConnection;
+  let isBroadcasting = false;
+  
+  // Set up media stream
+  startButton.addEventListener('click', async () => {
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({ 
+        video: true, 
+        audio: true 
+      });
+      
+      localVideo.srcObject = localStream;
+      startButton.disabled = true;
+      broadcastButton.disabled = false;
+      
+      updateStatus('Camera ready. Click "Start Broadcasting" to begin.', 'waiting');
+    } catch (error) {
+      console.error('Error accessing media devices:', error);
+      updateStatus(`Error accessing camera/microphone: ${error.message}`, 'offline');
+    }
+  });
+  
+  // Start broadcasting
+  broadcastButton.addEventListener('click', () => {
+    if (!localStream) {
+      updateStatus('Please start your camera first', 'offline');
+      return;
+    }
+    
+    socket.emit('broadcaster');
+    setupPeerConnection();
+    broadcastButton.disabled = true;
+    stopButton.disabled = false;
+    isBroadcasting = true;
+  });
+  
+  // Stop broadcasting
+  stopButton.addEventListener('click', () => {
+    stopBroadcasting();
+  });
+  
+  // Set up WebRTC peer connection
+  function setupPeerConnection() {
+    const configuration = {
+        iceServers: [
+    {
+      urls: "stun:stun.relay.metered.ca:80",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:80",
+      username: "f5baae95181d1a3b2947f791",
+      credential: "n67tiC1skstIO4zc",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:80?transport=tcp",
+      username: "f5baae95181d1a3b2947f791",
+      credential: "n67tiC1skstIO4zc",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:443",
+      username: "f5baae95181d1a3b2947f791",
+      credential: "n67tiC1skstIO4zc",
+    },
+    {
+      urls: "turns:global.relay.metered.ca:443?transport=tcp",
+      username: "f5baae95181d1a3b2947f791",
+      credential: "n67tiC1skstIO4zc",
+    },
+  ],
+    };
+    
+    peerConnection = new RTCPeerConnection(configuration);
+    
+    // Add all tracks from local stream to the peer connection
+    localStream.getTracks().forEach(track => {
+      peerConnection.addTrack(track, localStream);
+    });
+    
+    // ICE candidate handling
+    peerConnection.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.emit('broadcaster_ice_candidate', event.candidate);
+      }
+    };
+    
+    // Create offer
+    peerConnection.createOffer()
+      .then(offer => peerConnection.setLocalDescription(offer))
+      .then(() => {
+        socket.emit('broadcaster_offer', peerConnection.localDescription);
+        updateStatus('Broadcasting started. Waiting for viewers...', 'online');
+      })
+      .catch(error => {
+        console.error('Error creating offer:', error);
+        updateStatus(`Error starting broadcast: ${error.message}`, 'offline');
+      });
+  }
+  
+  // Stop broadcasting
+  function stopBroadcasting() {
+    if (peerConnection) {
+      peerConnection.close();
+      peerConnection = null;
+    }
+    
+    isBroadcasting = false;
+    broadcastButton.disabled = false;
+    stopButton.disabled = true;
+    updateStatus('Broadcasting stopped', 'offline');
+  }
+  
+  // Update status message
+  function updateStatus(message, className) {
+    statusElement.textContent = `Status: ${message}`;
+    statusElement.className = `status ${className}`;
+  }
+  
+  // Socket.io event handlers
+  socket.on('connect', () => {
+    console.log('Connected to server');
+  });
+  
+  socket.on('broadcaster_exists', () => {
+    updateStatus('Another broadcaster is already active. Please try again later.', 'offline');
+    stopBroadcasting();
+  });
+  
+  socket.on('broadcaster_answer', (description) => {
+    peerConnection.setRemoteDescription(description)
+      .catch(error => {
+        console.error('Error setting remote description:', error);
+      });
+  });
+  
+  socket.on('broadcaster_ice_candidate', (candidate) => {
+    if (peerConnection) {
+      peerConnection.addIceCandidate(new RTCIceCandidate(candidate))
+        .catch(error => {
+          console.error('Error adding ICE candidate:', error);
+        });
+    }
+  });
+  
+  // Handle page unload
+  window.addEventListener('beforeunload', () => {
+    if (isBroadcasting) {
+      socket.emit('disconnect');
+    }
+    
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+    }
+  });
+});
+  </script>
+</body>
+</html>
