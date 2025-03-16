@@ -10,14 +10,14 @@ const server = http.createServer(app);
 const io = socketIo(server,
   {
     cors: {
-      origin: "http://localhost:4200",  // Or use "*" to allow all origins
+      origin: "https://wrtc-angular.vercel.app",  // Or use "*" to allow all origins
       methods: ["GET", "POST"],
       credentials: true
     }
   }
 );
 app.use(cors({
-  origin: 'http://localhost:4200'    
+  origin: 'https://wrtc-angular.vercel.app'    
 }))
 
 // Set EJS as the view engine
