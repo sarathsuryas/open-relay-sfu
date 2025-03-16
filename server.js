@@ -10,14 +10,14 @@ const server = http.createServer(app);
 const io = socketIo(server,
   {
     cors: {
-      origin: "https://wrtc-angular.vercel.app",  // Or use "*" to allow all origins
+      origin: "http://localhost:4200",  // Or use "*" to allow all origins
       methods: ["GET", "POST"],
       credentials: true
     }
   }
 );
 app.use(cors({
-  origin: 'https://wrtc-angular.vercel.app'    
+  origin: 'http://localhost:4200'    
 }))
 
 // Set EJS as the view engine
@@ -150,32 +150,9 @@ io.on('connection', (socket) => {
     
     try {
       // Create a new RTCPeerConnection for this viewer
+      
       const viewerPC = new wrtc.RTCPeerConnection({
-        iceServers: [
-            {
-              urls: "stun:stun.relay.metered.ca:80",
-            },
-            {
-              urls: "turn:global.relay.metered.ca:80",
-              username: "f5baae95181d1a3b2947f791",
-              credential: "n67tiC1skstIO4zc",
-            },
-            {
-              urls: "turn:global.relay.metered.ca:80?transport=tcp",
-              username: "f5baae95181d1a3b2947f791",
-              credential: "n67tiC1skstIO4zc",
-            },
-            {
-              urls: "turn:global.relay.metered.ca:443",
-              username: "f5baae95181d1a3b2947f791",
-              credential: "n67tiC1skstIO4zc",
-            },
-            {
-              urls: "turns:global.relay.metered.ca:443?transport=tcp",
-              username: "f5baae95181d1a3b2947f791",
-              credential: "n67tiC1skstIO4zc",
-            },
-          ],
+        iceServers: [{   urls: [ "stun:bn-turn2.xirsys.com" ]}, {   username: "o8_s2lbVKiqxpNa5Ntw5kG_h7g9zYj-AbK49RHWtnH26b_exoUgSkD5MrvzAQkpMAAAAAGcrwiBzYXJhdGhz",   credential: "90886c3c-9c74-11ef-8e6e-0242ac140004",   urls: [       "turn:bn-turn2.xirsys.com:80?transport=udp",       "turn:bn-turn2.xirsys.com:3478?transport=udp",       "turn:bn-turn2.xirsys.com:80?transport=tcp",       "turn:bn-turn2.xirsys.com:3478?transport=tcp",       "turns:bn-turn2.xirsys.com:443?transport=tcp",       "turns:bn-turn2.xirsys.com:5349?transport=tcp"   ]}]
       });
       
       // Add this viewer to our map
@@ -329,10 +306,10 @@ io.on('connection', (socket) => {
       }
     });
   }
-});
+}); 
 
 // Start server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Broadcast page: http://localhost:${PORT}/broadcast`);
