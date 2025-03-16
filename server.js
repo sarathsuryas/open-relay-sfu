@@ -3,10 +3,22 @@ const http = require('http');
 const socketIo = require('socket.io');
 const wrtc = require('wrtc');
 const path = require('path');
+const cors = require('cors');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = socketIo(server,
+  {
+    cors: {
+      origin: "http://localhost:4200",  // Or use "*" to allow all origins
+      methods: ["GET", "POST"],
+      credentials: true
+    }
+  }
+);
+app.use(cors({
+  origin: 'http://localhost:4200'    
+}))
 
 // Set EJS as the view engine
 app.set('view engine', 'ejs');
