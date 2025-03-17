@@ -158,25 +158,25 @@ io.on('connection', (socket) => {
           },
           {
             urls: "turn:global.relay.metered.ca:80",
-            username: "f5baae95181d1a3b2947f791",
-            credential: "n67tiC1skstIO4zc",
+            username: "836c17083ecba16b626af6f7",
+            credential: "j/Du96pT1PjJXgP/",
           },
           {
             urls: "turn:global.relay.metered.ca:80?transport=tcp",
-            username: "f5baae95181d1a3b2947f791",
-            credential: "n67tiC1skstIO4zc",
+            username: "836c17083ecba16b626af6f7",
+            credential: "j/Du96pT1PjJXgP/",
           },
           {
             urls: "turn:global.relay.metered.ca:443",
-            username: "f5baae95181d1a3b2947f791",
-            credential: "n67tiC1skstIO4zc",
+            username: "836c17083ecba16b626af6f7",
+            credential: "j/Du96pT1PjJXgP/",
           },
           {
             urls: "turns:global.relay.metered.ca:443?transport=tcp",
-            username: "f5baae95181d1a3b2947f791",
-            credential: "n67tiC1skstIO4zc",
+            username: "836c17083ecba16b626af6f7",
+            credential: "j/Du96pT1PjJXgP/",
           },
-        ]
+      ],
       });
       
       // Add this viewer to our map
